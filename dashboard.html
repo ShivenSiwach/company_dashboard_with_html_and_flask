@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f4f6fb;
+    margin:0;
+}
+.header{
+    background:#111827;
+    color:white;
+    padding:15px 25px;
+}
+.container{
+    padding:20px;
+}
+.kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:15px;
+}
+.kpi-box{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    box-shadow:0 3px 10px rgba(0,0,0,.1);
+}
+.chart-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:20px;
+}
+.chart-container{
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    height:320px;
+}
+canvas{
+    width:100% !important;
+    height:100% !important;
+}
+.error{
+    color:red;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📊 Analytics Dashboard</h2>
+    <a href="/logout" style="color:#60a5fa;">Logout</a>
+</div>
+
+<div class="container">
+
+{% if error %}
+<p class="error">{{ error }}</p>
+{% endif %}
+
+<!-- FILTER SECTION  -->
+<h3>Filter Data</h3>
+<form method="POST">
+
+    <select name="region">
+        <option value="">All Regions</option>
+        {% if chart_data %}
+            {% for r in chart_data.regions %}
+                <option value="{{ r }}">{{ r }}</option>
+            {% endfor %}
+        {% endif %}
+    </select>
+
+    <select name="product">
+        <option value="">All Products</option>
+        {% if chart_data %}
+            {% for p in chart_data.products %}
+                <option value="{{ p }}">{{ p }}</option>
+            {% endfor %}
+        {% endif %}
+    </select>
+
+    <button type="submit">Apply Filter</button>
+</form>
+
+<hr>
+
+<!-- UPLOAD SECTION -->
+<h3>Upload CSV</h3>
+<form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <button type="submit">Upload</button>
+</form>
+
+<hr>
+
+{% if total_revenue %}
+<div class="kpi-grid">
+    <div class="kpi-box">Revenue: {{ total_revenue }}</div>
+    <div class="kpi-box">Sales: {{ total_sales }}</div>
+    <div class="kpi-box">Profit: {{ total_profit }}</div>
+    <div class="kpi-box">Margin: {{ profit_margin }}%</div>
+    <div class="kpi-box">ML Prediction: {{ ml_prediction }}</div>
+    <div class="kpi-box">Model MAE: {{ ml_accuracy }}</div>
+</div>
+
+<p><b>{{ insight }}</b></p>
+
+<a href="/download"><button>Download CSV</button></a>
+{% endif %}
+
+<hr>
+
+<h3>Charts</h3>
+
+{% if chart_data %}
+<div class="chart-grid">
+
+<div class="chart-container">
+<canvas id="productChart"></canvas>
+</div>
+
+<div class="chart-container">
+<canvas id="regionChart"></canvas>
+</div>
+
+<div class="chart-container">
+<canvas id="trendChart"></canvas>
+</div>
+
+</div>
+
+<script>
+var chartData = {{ chart_data | tojson | safe }};
+
+new Chart(document.getElementById("productChart"),{
+    type:"bar",
+    data:{
+        labels:chartData.products,
+        datasets:[{label:"Sales", data:chartData.product_sales}]
+    }
+});
+
+new Chart(document.getElementById("regionChart"),{
+    type:"pie",
+    data:{
+        labels:chartData.regions,
+        datasets:[{label:"Revenue", data:chartData.region_revenue}]
+    }
+});
+
+new Chart(document.getElementById("trendChart"),{
+    type:"line",
+    data:{
+        labels:chartData.dates,
+        datasets:[{label:"Profit", data:chartData.profit_trend}]
+    }
+});
+</script>
+{% endif %}
+
+</div>
+</body>
+</html>
